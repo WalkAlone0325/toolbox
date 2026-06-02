@@ -1,7 +1,21 @@
 <script setup lang="ts">
+import { computed } from "vue";
 import { useToolboxStore } from "../stores/toolbox";
+import { useThemeStore, type ThemeMode } from "../stores/theme";
 
 const store = useToolboxStore();
+const theme = useThemeStore();
+
+const modeIcon = computed(() => {
+  if (theme.mode === "system") return "auto";
+  return theme.isDark ? "moon" : "sun";
+});
+
+function cycleMode() {
+  const order: ThemeMode[] = ["system", "light", "dark"];
+  const idx = order.indexOf(theme.mode);
+  theme.setMode(order[(idx + 1) % order.length]);
+}
 </script>
 
 <template>
@@ -70,6 +84,26 @@ const store = useToolboxStore();
     </nav>
 
     <footer class="sidebar-footer">
+      <button
+        class="theme-toggle"
+        :title="`当前：${theme.mode === 'system' ? '跟随系统' : theme.isDark ? '深色' : '浅色'}（点击切换）`"
+        @click="cycleMode"
+      >
+        <svg v-if="modeIcon === 'auto'" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8">
+          <circle cx="12" cy="12" r="9" />
+          <path d="M12 3a9 9 0 0 0 0 18Z" fill="currentColor" stroke="none" />
+        </svg>
+        <svg v-else-if="modeIcon === 'moon'" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8">
+          <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79Z" stroke-linejoin="round" />
+        </svg>
+        <svg v-else viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8">
+          <circle cx="12" cy="12" r="4" />
+          <path d="M12 2v2M12 20v2M4.93 4.93l1.41 1.41M17.66 17.66l1.41 1.41M2 12h2M20 12h2M4.93 19.07l1.41-1.41M17.66 6.34l1.41-1.41" stroke-linecap="round" />
+        </svg>
+        <span class="theme-label">
+          {{ theme.mode === 'system' ? '跟随系统' : theme.isDark ? '深色' : '浅色' }}
+        </span>
+      </button>
       <div class="footer-meta">v0.1.0 · Tauri 2</div>
     </footer>
   </aside>
@@ -84,6 +118,7 @@ const store = useToolboxStore();
   flex-direction: column;
   flex-shrink: 0;
   position: relative;
+  transition: background-color 0.25s ease;
 }
 
 .sidebar::after {
@@ -96,7 +131,7 @@ const store = useToolboxStore();
   background: linear-gradient(
     180deg,
     transparent,
-    rgba(99, 102, 241, 0.2),
+    var(--accent-glow),
     transparent
   );
   pointer-events: none;
@@ -116,7 +151,7 @@ const store = useToolboxStore();
   border-radius: 8px;
   overflow: hidden;
   flex-shrink: 0;
-  box-shadow: 0 2px 8px rgba(99, 102, 241, 0.3);
+  box-shadow: 0 2px 8px var(--accent-glow);
 }
 
 .brand-logo svg {
@@ -177,7 +212,7 @@ const store = useToolboxStore();
 .search-input:focus {
   border-color: var(--border-focus);
   background: var(--bg-elev-3);
-  box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.12);
+  box-shadow: 0 0 0 3px var(--accent-glow);
 }
 
 .section-label {
@@ -260,11 +295,47 @@ const store = useToolboxStore();
 }
 
 .sidebar-footer {
-  padding: 10px 16px 14px;
+  padding: 8px 8px 10px;
   border-top: 1px solid var(--border);
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.theme-toggle {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 6px 10px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  background: var(--bg-elev-2);
+  color: var(--text-dim);
+  font-size: 12px;
+  cursor: pointer;
+  transition: all var(--transition);
+}
+
+.theme-toggle:hover {
+  border-color: var(--border-strong);
+  color: var(--text);
+  background: var(--bg-elev-3);
+}
+
+.theme-toggle svg {
+  width: 14px;
+  height: 14px;
+  color: var(--accent);
+  flex-shrink: 0;
+}
+
+.theme-label {
+  flex: 1;
+  text-align: left;
 }
 
 .footer-meta {
+  padding: 0 4px;
   font-size: 10.5px;
   color: var(--text-muted);
   font-variant-numeric: tabular-nums;

@@ -1,6 +1,11 @@
 <script setup lang="ts">
+import { onMounted } from "vue";
 import Sidebar from "./layout/Sidebar.vue";
 import ToolContainer from "./layout/ToolContainer.vue";
+import { useThemeStore } from "./stores/theme";
+
+const theme = useThemeStore();
+onMounted(() => theme.applyTheme());
 </script>
 
 <template>
@@ -57,6 +62,32 @@ import ToolContainer from "./layout/ToolContainer.vue";
   --shadow-lg: 0 12px 32px rgba(0, 0, 0, 0.5);
 
   --transition: 150ms cubic-bezier(0.4, 0, 0.2, 1);
+
+  color-scheme: dark;
+}
+
+:root[data-theme="light"] {
+  --bg-base: #f7f8fa;
+  --bg-elev-1: #ffffff;
+  --bg-elev-2: #f1f3f7;
+  --bg-elev-3: #e6eaf0;
+  --bg-hover: rgba(0, 0, 0, 0.04);
+  --bg-active: rgba(99, 102, 241, 0.08);
+
+  --border: rgba(0, 0, 0, 0.08);
+  --border-strong: rgba(0, 0, 0, 0.12);
+  --border-focus: rgba(99, 102, 241, 0.5);
+
+  --text: #1f2937;
+  --text-dim: #4b5563;
+  --text-muted: #9ca3af;
+  --text-bright: #0f172a;
+
+  --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.06);
+  --shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+  --shadow-lg: 0 12px 32px rgba(0, 0, 0, 0.12);
+
+  color-scheme: light;
 }
 
 html,
@@ -78,6 +109,7 @@ body {
   -moz-osx-font-smoothing: grayscale;
   font-size: 14px;
   line-height: 1.5;
+  transition: background-color 0.25s ease, color 0.25s ease;
 }
 
 button {
@@ -98,28 +130,22 @@ input {
 }
 
 ::-webkit-scrollbar-thumb {
-  background: rgba(255, 255, 255, 0.06);
+  background: rgba(128, 128, 128, 0.2);
   border-radius: 4px;
 }
 
 ::-webkit-scrollbar-thumb:hover {
-  background: rgba(255, 255, 255, 0.12);
+  background: rgba(128, 128, 128, 0.4);
 }
 
 .app {
   display: flex;
   height: 100vh;
   width: 100vw;
-  background: radial-gradient(
-      ellipse at top left,
-      rgba(99, 102, 241, 0.06),
-      transparent 50%
-    ),
-    radial-gradient(
-      ellipse at bottom right,
-      rgba(16, 185, 129, 0.04),
-      transparent 50%
-    ),
+  background:
+    radial-gradient(ellipse at top left, var(--accent-glow), transparent 50%),
+    radial-gradient(ellipse at bottom right, rgba(16, 185, 129, 0.05), transparent 50%),
     var(--bg-base);
+  transition: background-color 0.25s ease;
 }
 </style>
