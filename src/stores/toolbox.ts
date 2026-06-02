@@ -1,6 +1,5 @@
 import { defineStore } from "pinia";
 import { ref, computed } from "vue";
-import type { ToolDef } from "../types";
 import { tools } from "../tools";
 
 export const useToolboxStore = defineStore("toolbox", () => {

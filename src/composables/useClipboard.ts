@@ -1,5 +1,4 @@
-import { invoke } from "@tauri-apps/api/core";
-import { onMounted, onUnmounted } from "vue";
+import { onMounted } from "vue";
 import { useClipboardStore } from "../stores/clipboard";
 
 export function useClipboardMonitor() {
