@@ -2,6 +2,7 @@
 import { onMounted } from "vue";
 import Sidebar from "./layout/Sidebar.vue";
 import ToolContainer from "./layout/ToolContainer.vue";
+import Toast from "./components/Toast.vue";
 import { useThemeStore } from "./stores/theme";
 
 const theme = useThemeStore();
@@ -12,6 +13,7 @@ onMounted(() => theme.applyTheme());
   <div class="app">
     <Sidebar />
     <ToolContainer />
+    <Toast />
   </div>
 </template>
 
@@ -23,34 +25,37 @@ onMounted(() => theme.applyTheme());
 }
 
 :root {
-  --bg-base: #0b0d12;
-  --bg-elev-1: #11141b;
-  --bg-elev-2: #161a23;
-  --bg-elev-3: #1d2230;
+  --bg-base: #0d1017;
+  --bg-elev-1: #151a24;
+  --bg-elev-2: #1b2230;
+  --bg-elev-3: #242c3c;
   --bg-hover: rgba(255, 255, 255, 0.04);
-  --bg-active: rgba(99, 102, 241, 0.12);
+  --bg-active: rgba(99, 102, 241, 0.14);
+  --bg-header: rgba(13, 16, 23, 0.7);
+  --bg-toolbar: rgba(13, 16, 23, 0.5);
+  --bg-glass: rgba(21, 26, 36, 0.65);
 
-  --border: rgba(255, 255, 255, 0.06);
-  --border-strong: rgba(255, 255, 255, 0.1);
-  --border-focus: rgba(99, 102, 241, 0.5);
+  --border: rgba(255, 255, 255, 0.07);
+  --border-strong: rgba(255, 255, 255, 0.13);
+  --border-focus: rgba(99, 102, 241, 0.55);
 
-  --text: #e6e9ef;
-  --text-dim: #8b93a7;
-  --text-muted: #5a6275;
-  --text-bright: #ffffff;
+  --text: #e5e7eb;
+  --text-dim: #b3b8c2;
+  --text-muted: #8b919c;
+  --text-bright: #fafafa;
 
   --accent: #6366f1;
-  --accent-hover: #7c7ff5;
-  --accent-glow: rgba(99, 102, 241, 0.4);
+  --accent-hover: #818cf8;
+  --accent-glow: rgba(99, 102, 241, 0.35);
 
   --success: #10b981;
   --warning: #f59e0b;
   --danger: #ef4444;
   --info: #3b82f6;
 
-  --type-text: #3b82f6;
-  --type-image: #10b981;
-  --type-files: #f59e0b;
+  --type-text: #60a5fa;
+  --type-image: #34d399;
+  --type-files: #fbbf24;
 
   --radius-sm: 6px;
   --radius: 10px;
@@ -58,8 +63,8 @@ onMounted(() => theme.applyTheme());
   --radius-xl: 18px;
 
   --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.3);
-  --shadow: 0 4px 12px rgba(0, 0, 0, 0.35);
-  --shadow-lg: 0 12px 32px rgba(0, 0, 0, 0.5);
+  --shadow: 0 4px 12px rgba(0, 0, 0, 0.4);
+  --shadow-lg: 0 12px 32px rgba(0, 0, 0, 0.55);
 
   --transition: 150ms cubic-bezier(0.4, 0, 0.2, 1);
 
@@ -73,6 +78,9 @@ onMounted(() => theme.applyTheme());
   --bg-elev-3: #e6eaf0;
   --bg-hover: rgba(0, 0, 0, 0.04);
   --bg-active: rgba(99, 102, 241, 0.08);
+  --bg-header: rgba(255, 255, 255, 0.78);
+  --bg-toolbar: rgba(247, 248, 250, 0.6);
+  --bg-glass: rgba(255, 255, 255, 0.7);
 
   --border: rgba(0, 0, 0, 0.08);
   --border-strong: rgba(0, 0, 0, 0.12);
@@ -143,9 +151,16 @@ input {
   height: 100vh;
   width: 100vw;
   background:
-    radial-gradient(ellipse at top left, var(--accent-glow), transparent 50%),
-    radial-gradient(ellipse at bottom right, rgba(16, 185, 129, 0.05), transparent 50%),
+    radial-gradient(ellipse at top left, var(--accent-glow), transparent 55%),
+    radial-gradient(ellipse at bottom right, var(--accent-glow), transparent 60%),
     var(--bg-base);
   transition: background-color 0.25s ease;
+}
+
+:root[data-theme="light"] .app {
+  background:
+    radial-gradient(ellipse at top left, rgba(99, 102, 241, 0.08), transparent 55%),
+    radial-gradient(ellipse at bottom right, rgba(168, 85, 247, 0.06), transparent 60%),
+    var(--bg-base);
 }
 </style>

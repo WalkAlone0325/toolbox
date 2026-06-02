@@ -183,7 +183,11 @@ export const useThemeStore = defineStore("theme", () => {
   const presetId = ref<string>(initial.presetId);
   const customAccent = ref<string | null>(initial.customAccent);
   const customBgBase = ref<string | null>(initial.customBgBase);
-  const systemDark = ref(true);
+  const systemDark = ref(
+    typeof window !== "undefined"
+      ? window.matchMedia("(prefers-color-scheme: dark)").matches
+      : true
+  );
 
   let mediaQuery: MediaQueryList | null = null;
   const onMediaChange = (e: MediaQueryListEvent) => {

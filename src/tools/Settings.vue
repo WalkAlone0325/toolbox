@@ -217,7 +217,7 @@ const effectiveLabel = computed(() => (theme.isDark ? "深色" : "浅色"));
   display: flex;
   align-items: center;
   gap: 12px;
-  padding: 14px 14px;
+  padding: 14px 38px 14px 14px;
   border: 1px solid var(--border);
   border-radius: var(--radius);
   background: var(--bg-elev-2);
@@ -225,6 +225,7 @@ const effectiveLabel = computed(() => (theme.isDark ? "深色" : "浅色"));
   cursor: pointer;
   text-align: left;
   transition: all var(--transition);
+  min-height: 64px;
 }
 
 .mode-card:hover {
@@ -277,16 +278,32 @@ const effectiveLabel = computed(() => (theme.isDark ? "深色" : "浅色"));
   margin-top: 2px;
 }
 
-.check {
-  width: 18px;
-  height: 18px;
+.mode-card .check,
+.preset-card .check {
+  position: absolute;
+  top: 10px;
+  right: 10px;
+  width: 16px;
+  height: 16px;
   color: var(--accent);
-  flex-shrink: 0;
+  background: var(--bg-elev-1);
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: 0 0 0 2px var(--bg-elev-2);
+}
+
+.mode-card.active .check,
+.preset-card.active .check {
+  background: var(--accent);
+  color: white;
+  box-shadow: 0 0 0 2px var(--bg-elev-1), 0 0 8px var(--accent-glow);
 }
 
 .check svg {
-  width: 100%;
-  height: 100%;
+  width: 12px;
+  height: 12px;
 }
 
 .status-bar {
@@ -329,7 +346,7 @@ const effectiveLabel = computed(() => (theme.isDark ? "深色" : "浅色"));
   display: flex;
   align-items: center;
   gap: 12px;
-  padding: 12px;
+  padding: 12px 36px 12px 12px;
   border: 1px solid var(--border);
   border-radius: var(--radius);
   background: var(--bg-elev-2);

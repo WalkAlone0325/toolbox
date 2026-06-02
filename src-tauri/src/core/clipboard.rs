@@ -86,6 +86,16 @@ fn macos_change_count() -> u64 {
 fn read_clipboard(
     clipboard: &mut Clipboard,
 ) -> Result<Option<(String, Option<String>, Option<Vec<u8>>, Option<String>)>, arboard::Error> {
+    #[cfg(target_os = "macos")]
+    {
+        if let Some(files) = macos_read_files() {
+            if !files.is_empty() {
+                let json = serde_json::to_string(&files).unwrap_or_default();
+                return Ok(Some(("files".into(), None, None, Some(json))));
+            }
+        }
+    }
+
     if let Ok(text) = clipboard.get_text() {
         if !text.is_empty() {
             return Ok(Some(("text".into(), Some(text), None, None)));
@@ -97,6 +107,92 @@ fn read_clipboard(
         }
     }
     Ok(None)
+}
+
+#[cfg(target_os = "macos")]
+fn macos_read_files() -> Option<Vec<String>> {
+    use objc::runtime::{Class, Object};
+    use objc::{msg_send, sel, sel_impl};
+
+    unsafe {
+        let cls = Class::get("NSPasteboard")?;
+        let pb: *mut Object = msg_send![cls, generalPasteboard];
+
+        let ns_string_cls = Class::get("NSString")?;
+        let key_filenames: *mut Object =
+            msg_send![ns_string_cls, stringWithUTF8String: "NSFilenamesPboardType"];
+
+        let types: *mut Object = msg_send![pb, types];
+        let count: usize = msg_send![types, count];
+        let mut has_filenames = false;
+        let mut has_file_url = false;
+        for i in 0..count {
+            let t: *mut Object = msg_send![types, objectAtIndex: i];
+            let c_str: *const i8 = msg_send![t, UTF8String];
+            if c_str.is_null() {
+                continue;
+            }
+            let s = std::ffi::CStr::from_ptr(c_str).to_string_lossy().into_owned();
+            if s == "NSFilenamesPboardType" {
+                has_filenames = true;
+            } else if s == "public.file-url" {
+                has_file_url = true;
+            }
+        }
+
+        if has_filenames {
+            let plist: *mut Object = msg_send![pb, propertyListForType: key_filenames];
+            if !plist.is_null() {
+                let is_array: bool = msg_send![plist, isKindOfClass: Class::get("NSArray")?];
+                if is_array {
+                    let n: usize = msg_send![plist, count];
+                    let mut paths = Vec::with_capacity(n);
+                    for i in 0..n {
+                        let p: *mut Object = msg_send![plist, objectAtIndex: i];
+                        let c_str: *const i8 = msg_send![p, UTF8String];
+                        if !c_str.is_null() {
+                            let s = std::ffi::CStr::from_ptr(c_str)
+                                .to_string_lossy()
+                                .into_owned();
+                            paths.push(s);
+                        }
+                    }
+                    if !paths.is_empty() {
+                        return Some(paths);
+                    }
+                }
+            }
+        }
+
+        if has_file_url {
+            let ns_array_cls = Class::get("NSArray")?;
+            let url_cls = Class::get("NSURL")?;
+            let classes: *mut Object = msg_send![ns_array_cls, arrayWithObject: url_cls];
+            let objects: *mut Object = msg_send![pb, readObjectsForClasses:classes options: std::ptr::null::<Object>()];
+            if !objects.is_null() {
+                let n: usize = msg_send![objects, count];
+                let mut paths = Vec::with_capacity(n);
+                for i in 0..n {
+                    let url: *mut Object = msg_send![objects, objectAtIndex: i];
+                    let path: *mut Object = msg_send![url, path];
+                    if !path.is_null() {
+                        let c_str: *const i8 = msg_send![path, UTF8String];
+                        if !c_str.is_null() {
+                            let s = std::ffi::CStr::from_ptr(c_str)
+                                .to_string_lossy()
+                                .into_owned();
+                            paths.push(s);
+                        }
+                    }
+                }
+                if !paths.is_empty() {
+                    return Some(paths);
+                }
+            }
+        }
+
+        None
+    }
 }
 
 fn encode_png(img: &arboard::ImageData) -> Option<Vec<u8>> {

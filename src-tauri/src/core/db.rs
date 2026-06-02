@@ -26,6 +26,27 @@ pub struct Database {
     app_dir: std::path::PathBuf,
 }
 
+fn row_to_entry(row: &rusqlite::Row) -> rusqlite::Result<ClipboardEntry> {
+    Ok(ClipboardEntry {
+        id: row.get(0)?,
+        hash: row.get(1)?,
+        entry_type: row.get(2)?,
+        text_val: row.get(3)?,
+        image_path: row.get(4)?,
+        thumb_path: row.get(5)?,
+        file_list: row.get(6)?,
+        source_app: row.get(7)?,
+        byte_size: row.get(8)?,
+        fav: row.get::<_, i32>(9)? != 0,
+        pinned: row.get::<_, i32>(10)? != 0,
+        created_at: row.get(11)?,
+        updated_at: row.get(12)?,
+    })
+}
+
+const ENTRY_COLUMNS_PLAIN: &str = "id, hash, type, text_val, image_path, thumb_path,
+        file_list, source_app, byte_size, fav, pinned, created_at, updated_at";
+
 impl Database {
     pub fn new(path: &Path) -> Result<Self> {
         let conn = Connection::open(path)?;
@@ -59,6 +80,19 @@ impl Database {
             [],
         )?;
 
+        conn.execute_batch(
+            "CREATE TRIGGER IF NOT EXISTS entries_ai AFTER INSERT ON entries BEGIN
+                INSERT INTO entries_fts(rowid, text_val) VALUES (new.id, new.text_val);
+             END;
+             CREATE TRIGGER IF NOT EXISTS entries_ad AFTER DELETE ON entries BEGIN
+                INSERT INTO entries_fts(entries_fts, rowid, text_val) VALUES('delete', old.id, old.text_val);
+             END;
+             CREATE TRIGGER IF NOT EXISTS entries_au AFTER UPDATE ON entries BEGIN
+                INSERT INTO entries_fts(entries_fts, rowid, text_val) VALUES('delete', old.id, old.text_val);
+                INSERT INTO entries_fts(rowid, text_val) VALUES (new.id, new.text_val);
+             END;"
+        )?;
+
         let app_dir = path.parent().unwrap().to_path_buf();
         if std::fs::create_dir_all(app_dir.join("images")).is_err()
             || std::fs::create_dir_all(app_dir.join("thumbs")).is_err()
@@ -70,6 +104,12 @@ impl Database {
             conn: Mutex::new(conn),
             app_dir,
         })
+    }
+
+    pub fn rebuild_fts(&self) -> Result<()> {
+        let conn = self.conn.lock().unwrap();
+        conn.execute("INSERT INTO entries_fts(entries_fts) VALUES('rebuild')", [])?;
+        Ok(())
     }
 
     pub fn has_entry(&self, hash: &str) -> Result<bool> {
@@ -114,11 +154,12 @@ impl Database {
         };
 
         let conn = self.conn.lock().unwrap();
-        conn.execute(
+        let inserted = conn.execute(
             "INSERT OR IGNORE INTO entries (hash, type, text_val, image_path, thumb_path, file_list, byte_size, created_at, updated_at)
              VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8, ?8)",
             params![hash, type_, text, image_path, thumb_path, file_list, size, now],
-        )?;
+        )? > 0;
+        let _ = inserted;
 
         Ok(())
     }
@@ -145,49 +186,56 @@ impl Database {
         filter_type: Option<&str>,
     ) -> Result<Vec<ClipboardEntry>> {
         let conn = self.conn.lock().unwrap();
-        let mut sql = String::from(
-            "SELECT id, hash, type, text_val, image_path, thumb_path, file_list,
-                    source_app, byte_size, fav, pinned, created_at, updated_at
-             FROM entries",
-        );
+        let pattern = format!("%{}%", query);
 
-        if !query.is_empty() {
-            let safe = query.replace('\'', "''");
-            sql = format!(
-                "SELECT e.id, e.hash, e.type, e.text_val, e.image_path, e.thumb_path,
-                        e.file_list, e.source_app, e.byte_size, e.fav, e.pinned,
-                        e.created_at, e.updated_at
-                 FROM entries e
-                 INNER JOIN entries_fts fts ON e.id = fts.rowid
-                 WHERE entries_fts MATCH '{}'",
-                safe
-            );
+        let entries: Vec<ClipboardEntry> = if !query.is_empty() {
+            let sql = if filter_type.is_some() {
+                format!(
+                    "SELECT {cols} FROM entries
+                     WHERE text_val LIKE ?1 COLLATE NOCASE AND type = ?2
+                     ORDER BY pinned DESC, created_at DESC LIMIT 500",
+                    cols = ENTRY_COLUMNS_PLAIN
+                )
+            } else {
+                format!(
+                    "SELECT {cols} FROM entries
+                     WHERE text_val LIKE ?1 COLLATE NOCASE
+                     ORDER BY pinned DESC, created_at DESC LIMIT 500",
+                    cols = ENTRY_COLUMNS_PLAIN
+                )
+            };
+            let mut stmt = conn.prepare(&sql)?;
+            let rows: Vec<ClipboardEntry> = if let Some(ft) = filter_type {
+                stmt.query_map(params![&pattern, ft], row_to_entry)?
+                    .collect::<Result<Vec<_>>>()?
+            } else {
+                stmt.query_map(params![&pattern], row_to_entry)?
+                    .collect::<Result<Vec<_>>>()?
+            };
+            rows
         } else if let Some(ft) = filter_type {
-            sql.push_str(&format!(" WHERE type = '{}'", ft));
-        }
-
-        sql.push_str(" ORDER BY pinned DESC, created_at DESC LIMIT 500");
-
-        let mut stmt = conn.prepare(&sql)?;
-        let entries = stmt
-            .query_map([], |row| {
-                Ok(ClipboardEntry {
-                    id: row.get(0)?,
-                    hash: row.get(1)?,
-                    entry_type: row.get(2)?,
-                    text_val: row.get(3)?,
-                    image_path: row.get(4)?,
-                    thumb_path: row.get(5)?,
-                    file_list: row.get(6)?,
-                    source_app: row.get(7)?,
-                    byte_size: row.get(8)?,
-                    fav: row.get::<_, i32>(9)? != 0,
-                    pinned: row.get::<_, i32>(10)? != 0,
-                    created_at: row.get(11)?,
-                    updated_at: row.get(12)?,
-                })
-            })?
-            .collect::<Result<Vec<_>>>()?;
+            let sql = format!(
+                "SELECT {cols} FROM entries WHERE type = ?1
+                 ORDER BY pinned DESC, created_at DESC LIMIT 500",
+                cols = ENTRY_COLUMNS_PLAIN
+            );
+            let mut stmt = conn.prepare(&sql)?;
+            let rows: Vec<ClipboardEntry> = stmt
+                .query_map(params![ft], row_to_entry)?
+                .collect::<Result<Vec<_>>>()?;
+            rows
+        } else {
+            let sql = format!(
+                "SELECT {cols} FROM entries
+                 ORDER BY pinned DESC, created_at DESC LIMIT 500",
+                cols = ENTRY_COLUMNS_PLAIN
+            );
+            let mut stmt = conn.prepare(&sql)?;
+            let rows: Vec<ClipboardEntry> = stmt
+                .query_map([], row_to_entry)?
+                .collect::<Result<Vec<_>>>()?;
+            rows
+        };
 
         Ok(entries)
     }
@@ -196,6 +244,12 @@ impl Database {
         let conn = self.conn.lock().unwrap();
         conn.execute("DELETE FROM entries WHERE id = ?1", params![id])?;
         Ok(())
+    }
+
+    pub fn clear_all(&self) -> Result<usize> {
+        let conn = self.conn.lock().unwrap();
+        let n = conn.execute("DELETE FROM entries", [])?;
+        Ok(n)
     }
 
     pub fn toggle_favorite(&self, id: i64) -> Result<()> {
@@ -218,29 +272,15 @@ impl Database {
 
     pub fn get_entry(&self, id: i64) -> Result<Option<ClipboardEntry>> {
         let conn = self.conn.lock().unwrap();
-        let mut stmt = conn.prepare(
-            "SELECT id, hash, type, text_val, image_path, thumb_path, file_list,
-                    source_app, byte_size, fav, pinned, created_at, updated_at
-             FROM entries WHERE id = ?1",
-        )?;
+        let sql = format!(
+            "SELECT {cols} FROM entries WHERE id = ?1",
+            cols = ENTRY_COLUMNS_PLAIN
+        );
+        let mut stmt = conn.prepare(&sql)?;
 
         let mut rows = stmt.query(params![id])?;
         if let Some(row) = rows.next()? {
-            Ok(Some(ClipboardEntry {
-                id: row.get(0)?,
-                hash: row.get(1)?,
-                entry_type: row.get(2)?,
-                text_val: row.get(3)?,
-                image_path: row.get(4)?,
-                thumb_path: row.get(5)?,
-                file_list: row.get(6)?,
-                source_app: row.get(7)?,
-                byte_size: row.get(8)?,
-                fav: row.get::<_, i32>(9)? != 0,
-                pinned: row.get::<_, i32>(10)? != 0,
-                created_at: row.get(11)?,
-                updated_at: row.get(12)?,
-            }))
+            Ok(Some(row_to_entry(row)?))
         } else {
             Ok(None)
         }

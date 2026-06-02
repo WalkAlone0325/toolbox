@@ -5,11 +5,11 @@ export function useClipboardMonitor() {
   const store = useClipboardStore();
 
   function handleUpdate() {
-    store.fetchHistory(store.searchQuery, store.filterType);
+    store.fetchAll();
   }
 
   onMounted(async () => {
-    await store.fetchHistory();
+    await store.fetchAll();
   });
 
   return { refresh: handleUpdate };

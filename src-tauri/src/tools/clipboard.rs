@@ -23,6 +23,12 @@ pub fn delete_entry(db: DbState<'_>, id: i64) -> Result<(), String> {
 }
 
 #[tauri::command]
+pub fn clear_all(db: DbState<'_>) -> Result<usize, String> {
+    let db = db.lock().map_err(|e| e.to_string())?;
+    db.clear_all().map_err(|e| e.to_string())
+}
+
+#[tauri::command]
 pub fn toggle_favorite(db: DbState<'_>, id: i64) -> Result<(), String> {
     let db = db.lock().map_err(|e| e.to_string())?;
     db.toggle_favorite(id).map_err(|e| e.to_string())

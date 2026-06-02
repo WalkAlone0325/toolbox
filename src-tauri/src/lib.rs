@@ -14,6 +14,9 @@ pub fn run() {
             std::fs::create_dir_all(&app_dir)?;
             let db_path = app_dir.join("toolbox.db");
             let db = std::sync::Arc::new(std::sync::Mutex::new(core::db::Database::new(&db_path)?));
+            if let Err(e) = db.lock().unwrap().rebuild_fts() {
+                log::warn!("FTS rebuild failed: {}", e);
+            }
             app.manage(db.clone());
 
             let handle = app.handle().clone();
@@ -26,6 +29,7 @@ pub fn run() {
         .invoke_handler(tauri::generate_handler![
             tools::clipboard::get_history,
             tools::clipboard::delete_entry,
+            tools::clipboard::clear_all,
             tools::clipboard::toggle_favorite,
             tools::clipboard::toggle_pin,
             tools::clipboard::paste_entry,
