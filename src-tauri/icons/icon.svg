@@ -1,45 +1,174 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1024 1024" width="1024" height="1024">
   <defs>
+    <clipPath id="squircleClip">
+      <rect width="1024" height="1024" rx="300" ry="300"/>
+    </clipPath>
+
     <linearGradient id="bg" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0%" stop-color="#22d3ee"/>
+      <stop offset="35%" stop-color="#a78bfa"/>
+      <stop offset="100%" stop-color="#f472b6"/>
+    </linearGradient>
+
+    <radialGradient id="topGlow" cx="0.5" cy="0" r="0.95">
+      <stop offset="0%" stop-color="#ffffff" stop-opacity="0.6"/>
+      <stop offset="55%" stop-color="#ffffff" stop-opacity="0.08"/>
+      <stop offset="100%" stop-color="#ffffff" stop-opacity="0"/>
+    </radialGradient>
+
+    <radialGradient id="orbWhite" cx="0.5" cy="0.5" r="0.5">
+      <stop offset="0%" stop-color="#ffffff" stop-opacity="0.6"/>
+      <stop offset="100%" stop-color="#ffffff" stop-opacity="0"/>
+    </radialGradient>
+    <radialGradient id="orbPink" cx="0.5" cy="0.5" r="0.5">
+      <stop offset="0%" stop-color="#fbcfe8" stop-opacity="0.75"/>
+      <stop offset="100%" stop-color="#fbcfe8" stop-opacity="0"/>
+    </radialGradient>
+    <radialGradient id="orbCyan" cx="0.5" cy="0.5" r="0.5">
+      <stop offset="0%" stop-color="#a5f3fc" stop-opacity="0.65"/>
+      <stop offset="100%" stop-color="#a5f3fc" stop-opacity="0"/>
+    </radialGradient>
+    <radialGradient id="orbYellow" cx="0.5" cy="0.5" r="0.5">
+      <stop offset="0%" stop-color="#fef9c3" stop-opacity="0.6"/>
+      <stop offset="100%" stop-color="#fef9c3" stop-opacity="0"/>
+    </radialGradient>
+
+    <linearGradient id="card" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%" stop-color="#ffffff"/>
+      <stop offset="100%" stop-color="#eef2ff"/>
+    </linearGradient>
+
+    <radialGradient id="aura" cx="0.5" cy="0.5" r="0.5">
+      <stop offset="0%" stop-color="#ffffff" stop-opacity="1"/>
+      <stop offset="25%" stop-color="#e0f2fe" stop-opacity="0.95"/>
+      <stop offset="55%" stop-color="#7dd3fc" stop-opacity="0.7"/>
+      <stop offset="100%" stop-color="#06b6d4" stop-opacity="0"/>
+    </radialGradient>
+
+    <linearGradient id="sparkFill" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%" stop-color="#ffffff"/>
+      <stop offset="40%" stop-color="#ffffff"/>
+      <stop offset="75%" stop-color="#e0f2fe"/>
+      <stop offset="100%" stop-color="#38bdf8"/>
+    </linearGradient>
+
+    <linearGradient id="lineA" x1="0" y1="0" x2="1" y2="0">
       <stop offset="0%" stop-color="#6366f1"/>
-      <stop offset="50%" stop-color="#a855f7"/>
+      <stop offset="50%" stop-color="#8b5cf6"/>
+      <stop offset="100%" stop-color="#a855f7"/>
+    </linearGradient>
+    <linearGradient id="lineB" x1="0" y1="0" x2="1" y2="0">
+      <stop offset="0%" stop-color="#a855f7"/>
+      <stop offset="50%" stop-color="#d946ef"/>
       <stop offset="100%" stop-color="#ec4899"/>
     </linearGradient>
-    <linearGradient id="topShine" x1="0" y1="0" x2="0" y2="1">
-      <stop offset="0%" stop-color="#ffffff" stop-opacity="0.30"/>
-      <stop offset="100%" stop-color="#ffffff" stop-opacity="0"/>
+    <linearGradient id="lineC" x1="0" y1="0" x2="1" y2="0">
+      <stop offset="0%" stop-color="#ec4899"/>
+      <stop offset="50%" stop-color="#f472b6"/>
+      <stop offset="100%" stop-color="#fb7185"/>
     </linearGradient>
-    <linearGradient id="bodyShade" x1="0" y1="0" x2="0" y2="1">
-      <stop offset="0%" stop-color="#ffffff"/>
-      <stop offset="100%" stop-color="#f1f3fa"/>
-    </linearGradient>
-    <filter id="softShadow" x="-10%" y="-10%" width="120%" height="130%">
-      <feGaussianBlur in="SourceAlpha" stdDeviation="16"/>
-      <feOffset dx="0" dy="14"/>
-      <feComponentTransfer><feFuncA type="linear" slope="0.35"/></feComponentTransfer>
+
+    <filter id="cardShadow" x="-30%" y="-30%" width="160%" height="180%">
+      <feGaussianBlur in="SourceAlpha" stdDeviation="30"/>
+      <feOffset dx="0" dy="30"/>
+      <feComponentTransfer><feFuncA type="linear" slope="0.5"/></feComponentTransfer>
+      <feMerge><feMergeNode/><feMergeNode in="SourceGraphic"/></feMerge>
+    </filter>
+
+    <filter id="bigGlow" x="-100%" y="-100%" width="300%" height="300%">
+      <feGaussianBlur stdDeviation="18"/>
+      <feMerge><feMergeNode/><feMergeNode in="SourceGraphic"/></feMerge>
+    </filter>
+
+    <filter id="midGlow" x="-100%" y="-100%" width="300%" height="300%">
+      <feGaussianBlur stdDeviation="8"/>
+      <feMerge><feMergeNode/><feMergeNode in="SourceGraphic"/></feMerge>
+    </filter>
+
+    <filter id="smallGlow" x="-100%" y="-100%" width="300%" height="300%">
+      <feGaussianBlur stdDeviation="3"/>
       <feMerge><feMergeNode/><feMergeNode in="SourceGraphic"/></feMerge>
     </filter>
   </defs>
 
-  <rect width="1024" height="1024" rx="224" ry="224" fill="url(#bg)"/>
+  <g clip-path="url(#squircleClip)">
+    <rect width="1024" height="1024" fill="url(#bg)"/>
+    <rect width="1024" height="1024" fill="url(#topGlow)"/>
 
-  <path d="M 0 224 Q 0 0 224 0 L 800 0 Q 1024 0 1024 224 L 1024 520 L 0 520 Z" fill="url(#topShine)"/>
+    <circle cx="180" cy="200" r="220" fill="url(#orbCyan)" filter="url(#bigGlow)"/>
+    <circle cx="840" cy="840" r="260" fill="url(#orbPink)" filter="url(#bigGlow)"/>
+    <circle cx="860" cy="180" r="140" fill="url(#orbYellow)" filter="url(#bigGlow)"/>
+    <circle cx="160" cy="820" r="160" fill="url(#orbWhite)" filter="url(#bigGlow)"/>
 
-  <g filter="url(#softShadow)">
-    <path d="M 408 352 Q 408 264 496 264 L 528 264 Q 616 264 616 352 L 616 388 L 568 388 L 568 352 Q 568 312 528 312 L 496 312 Q 456 312 456 352 L 456 388 L 408 388 Z" fill="url(#bodyShade)"/>
+    <g filter="url(#midGlow)">
+      <circle cx="120" cy="500" r="10" fill="#ffffff" opacity="0.85"/>
+      <circle cx="900" cy="500" r="8" fill="#fef9c3" opacity="0.95"/>
+      <circle cx="150" cy="780" r="12" fill="#fbcfe8" opacity="0.85"/>
+      <circle cx="880" cy="280" r="7" fill="#a5f3fc" opacity="0.95"/>
+      <circle cx="100" cy="320" r="6" fill="#ffffff" opacity="0.75"/>
+      <circle cx="940" cy="660" r="10" fill="#f0abfc" opacity="0.85"/>
+      <circle cx="80" cy="640" r="5" fill="#ffffff" opacity="0.65"/>
+      <circle cx="960" cy="400" r="5" fill="#ffffff" opacity="0.75"/>
+      <circle cx="500" cy="100" r="6" fill="#ffffff" opacity="0.7"/>
+      <circle cx="500" cy="940" r="7" fill="#fef9c3" opacity="0.7"/>
+    </g>
 
-    <rect x="232" y="364" width="560" height="404" rx="60" ry="60" fill="url(#bodyShade)"/>
+    <g filter="url(#smallGlow)">
+      <circle cx="60" cy="450" r="3" fill="#ffffff" opacity="0.7"/>
+      <circle cx="970" cy="540" r="3" fill="#ffffff" opacity="0.7"/>
+      <circle cx="450" cy="80" r="3" fill="#fef9c3" opacity="0.8"/>
+      <circle cx="600" cy="950" r="3" fill="#ffffff" opacity="0.7"/>
+      <circle cx="250" cy="120" r="3" fill="#a5f3fc" opacity="0.8"/>
+      <circle cx="780" cy="900" r="3" fill="#fbcfe8" opacity="0.8"/>
+    </g>
 
-    <rect x="232" y="456" width="560" height="6" fill="#0b0d12" opacity="0.08"/>
+    <g transform="translate(212 212)" filter="url(#cardShadow)">
+      <rect width="600" height="700" rx="90" ry="90" fill="url(#card)"/>
 
-    <circle cx="512" cy="459" r="14" fill="#0b0d12" opacity="0.18"/>
+      <path d="M 90 0 L 510 0 Q 600 0 600 90 L 600 320 L 0 320 L 0 90 Q 0 0 90 0 Z"
+            fill="url(#topGlow)" opacity="0.55"/>
 
-    <rect x="296" y="510" width="280" height="40" rx="20" ry="20" fill="#6366f1"/>
-    <rect x="296" y="572" width="408" height="40" rx="20" ry="20" fill="#a855f7"/>
-    <rect x="296" y="634" width="220" height="40" rx="20" ry="20" fill="#ec4899"/>
+      <g transform="translate(300 300)">
+        <circle cx="0" cy="0" r="300" fill="url(#aura)"/>
+        <circle cx="0" cy="0" r="220" fill="#7dd3fc" opacity="0.6" filter="url(#bigGlow)"/>
+        <circle cx="0" cy="0" r="160" fill="#bae6fd" opacity="0.8" filter="url(#bigGlow)"/>
+        <circle cx="0" cy="0" r="110" fill="#ffffff" opacity="1" filter="url(#midGlow)"/>
 
-    <circle cx="540" cy="530" r="6" fill="#ffffff" opacity="0.6"/>
-    <circle cx="668" cy="592" r="6" fill="#ffffff" opacity="0.6"/>
-    <circle cx="480" cy="654" r="6" fill="#ffffff" opacity="0.6"/>
+        <path
+          d="M 0 -180 Q 26 -26 180 0 Q 26 26 0 180 Q -26 26 -180 0 Q -26 -26 0 -180 Z"
+          fill="url(#sparkFill)"
+          filter="url(#midGlow)"/>
+
+        <path
+          d="M 0 -180 Q 26 -26 180 0 Q 26 26 0 180 Q -26 26 -180 0 Q -26 -26 0 -180 Z"
+          fill="none"
+          stroke="#ffffff"
+          stroke-width="10"
+          stroke-linejoin="round"
+          opacity="1"/>
+
+        <circle cx="0" cy="0" r="56" fill="#ffffff" filter="url(#smallGlow)"/>
+        <circle cx="0" cy="0" r="36" fill="#ffffff"/>
+        <circle cx="-12" cy="-12" r="14" fill="#ffffff"/>
+      </g>
+
+      <g transform="translate(80 540)">
+        <rect x="-3" y="-3" width="326" height="42" rx="21" fill="url(#lineA)" opacity="0.5" filter="url(#midGlow)"/>
+        <rect x="-3" y="53" width="446" height="42" rx="21" fill="url(#lineB)" opacity="0.5" filter="url(#midGlow)"/>
+        <rect x="-3" y="109" width="226" height="42" rx="21" fill="url(#lineC)" opacity="0.5" filter="url(#midGlow)"/>
+
+        <rect x="0" y="0" width="320" height="36" rx="18" ry="18" fill="url(#lineA)"/>
+        <rect x="0" y="56" width="440" height="36" rx="18" ry="18" fill="url(#lineB)"/>
+        <rect x="0" y="112" width="220" height="36" rx="18" ry="18" fill="url(#lineC)"/>
+
+        <rect x="0" y="0" width="320" height="10" rx="5" fill="#ffffff" opacity="0.55"/>
+        <rect x="0" y="56" width="440" height="10" rx="5" fill="#ffffff" opacity="0.55"/>
+        <rect x="0" y="112" width="220" height="10" rx="5" fill="#ffffff" opacity="0.55"/>
+
+        <circle cx="290" cy="18" r="4" fill="#ffffff" opacity="0.7"/>
+        <circle cx="410" cy="74" r="4" fill="#ffffff" opacity="0.7"/>
+        <circle cx="190" cy="130" r="4" fill="#ffffff" opacity="0.7"/>
+      </g>
+    </g>
   </g>
 </svg>
