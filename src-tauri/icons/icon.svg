@@ -91,83 +91,85 @@
     </filter>
   </defs>
 
-  <g clip-path="url(#squircleClip)">
-    <rect width="1024" height="1024" fill="url(#bg)"/>
-    <rect width="1024" height="1024" fill="url(#topGlow)"/>
+  <g transform="translate(64 64) scale(0.875)">
+    <g clip-path="url(#squircleClip)">
+      <rect width="1024" height="1024" fill="url(#bg)"/>
+      <rect width="1024" height="1024" fill="url(#topGlow)"/>
 
-    <circle cx="180" cy="200" r="220" fill="url(#orbCyan)" filter="url(#bigGlow)"/>
-    <circle cx="840" cy="840" r="260" fill="url(#orbPink)" filter="url(#bigGlow)"/>
-    <circle cx="860" cy="180" r="140" fill="url(#orbYellow)" filter="url(#bigGlow)"/>
-    <circle cx="160" cy="820" r="160" fill="url(#orbWhite)" filter="url(#bigGlow)"/>
+      <circle cx="180" cy="200" r="220" fill="url(#orbCyan)" filter="url(#bigGlow)"/>
+      <circle cx="840" cy="840" r="260" fill="url(#orbPink)" filter="url(#bigGlow)"/>
+      <circle cx="860" cy="180" r="140" fill="url(#orbYellow)" filter="url(#bigGlow)"/>
+      <circle cx="160" cy="820" r="160" fill="url(#orbWhite)" filter="url(#bigGlow)"/>
 
-    <g filter="url(#midGlow)">
-      <circle cx="120" cy="500" r="10" fill="#ffffff" opacity="0.85"/>
-      <circle cx="900" cy="500" r="8" fill="#fef9c3" opacity="0.95"/>
-      <circle cx="150" cy="780" r="12" fill="#fbcfe8" opacity="0.85"/>
-      <circle cx="880" cy="280" r="7" fill="#a5f3fc" opacity="0.95"/>
-      <circle cx="100" cy="320" r="6" fill="#ffffff" opacity="0.75"/>
-      <circle cx="940" cy="660" r="10" fill="#f0abfc" opacity="0.85"/>
-      <circle cx="80" cy="640" r="5" fill="#ffffff" opacity="0.65"/>
-      <circle cx="960" cy="400" r="5" fill="#ffffff" opacity="0.75"/>
-      <circle cx="500" cy="100" r="6" fill="#ffffff" opacity="0.7"/>
-      <circle cx="500" cy="940" r="7" fill="#fef9c3" opacity="0.7"/>
-    </g>
-
-    <g filter="url(#smallGlow)">
-      <circle cx="60" cy="450" r="3" fill="#ffffff" opacity="0.7"/>
-      <circle cx="970" cy="540" r="3" fill="#ffffff" opacity="0.7"/>
-      <circle cx="450" cy="80" r="3" fill="#fef9c3" opacity="0.8"/>
-      <circle cx="600" cy="950" r="3" fill="#ffffff" opacity="0.7"/>
-      <circle cx="250" cy="120" r="3" fill="#a5f3fc" opacity="0.8"/>
-      <circle cx="780" cy="900" r="3" fill="#fbcfe8" opacity="0.8"/>
-    </g>
-
-    <g transform="translate(212 212)" filter="url(#cardShadow)">
-      <rect width="600" height="700" rx="90" ry="90" fill="url(#card)"/>
-
-      <path d="M 90 0 L 510 0 Q 600 0 600 90 L 600 320 L 0 320 L 0 90 Q 0 0 90 0 Z"
-            fill="url(#topGlow)" opacity="0.55"/>
-
-      <g transform="translate(300 300)">
-        <circle cx="0" cy="0" r="300" fill="url(#aura)"/>
-        <circle cx="0" cy="0" r="220" fill="#7dd3fc" opacity="0.6" filter="url(#bigGlow)"/>
-        <circle cx="0" cy="0" r="160" fill="#bae6fd" opacity="0.8" filter="url(#bigGlow)"/>
-        <circle cx="0" cy="0" r="110" fill="#ffffff" opacity="1" filter="url(#midGlow)"/>
-
-        <path
-          d="M 0 -180 Q 26 -26 180 0 Q 26 26 0 180 Q -26 26 -180 0 Q -26 -26 0 -180 Z"
-          fill="url(#sparkFill)"
-          filter="url(#midGlow)"/>
-
-        <path
-          d="M 0 -180 Q 26 -26 180 0 Q 26 26 0 180 Q -26 26 -180 0 Q -26 -26 0 -180 Z"
-          fill="none"
-          stroke="#ffffff"
-          stroke-width="10"
-          stroke-linejoin="round"
-          opacity="1"/>
-
-        <circle cx="0" cy="0" r="56" fill="#ffffff" filter="url(#smallGlow)"/>
-        <circle cx="0" cy="0" r="36" fill="#ffffff"/>
-        <circle cx="-12" cy="-12" r="14" fill="#ffffff"/>
+      <g filter="url(#midGlow)">
+        <circle cx="120" cy="500" r="10" fill="#ffffff" opacity="0.85"/>
+        <circle cx="900" cy="500" r="8" fill="#fef9c3" opacity="0.95"/>
+        <circle cx="150" cy="780" r="12" fill="#fbcfe8" opacity="0.85"/>
+        <circle cx="880" cy="280" r="7" fill="#a5f3fc" opacity="0.95"/>
+        <circle cx="100" cy="320" r="6" fill="#ffffff" opacity="0.75"/>
+        <circle cx="940" cy="660" r="10" fill="#f0abfc" opacity="0.85"/>
+        <circle cx="80" cy="640" r="5" fill="#ffffff" opacity="0.65"/>
+        <circle cx="960" cy="400" r="5" fill="#ffffff" opacity="0.75"/>
+        <circle cx="500" cy="100" r="6" fill="#ffffff" opacity="0.7"/>
+        <circle cx="500" cy="940" r="7" fill="#fef9c3" opacity="0.7"/>
       </g>
 
-      <g transform="translate(80 540)">
-        <rect x="-3" y="-3" width="326" height="42" rx="21" fill="url(#lineA)" opacity="0.5" filter="url(#midGlow)"/>
-        <rect x="-3" y="53" width="446" height="42" rx="21" fill="url(#lineB)" opacity="0.5" filter="url(#midGlow)"/>
-        <rect x="-3" y="109" width="226" height="42" rx="21" fill="url(#lineC)" opacity="0.5" filter="url(#midGlow)"/>
+      <g filter="url(#smallGlow)">
+        <circle cx="60" cy="450" r="3" fill="#ffffff" opacity="0.7"/>
+        <circle cx="970" cy="540" r="3" fill="#ffffff" opacity="0.7"/>
+        <circle cx="450" cy="80" r="3" fill="#fef9c3" opacity="0.8"/>
+        <circle cx="600" cy="950" r="3" fill="#ffffff" opacity="0.7"/>
+        <circle cx="250" cy="120" r="3" fill="#a5f3fc" opacity="0.8"/>
+        <circle cx="780" cy="900" r="3" fill="#fbcfe8" opacity="0.8"/>
+      </g>
 
-        <rect x="0" y="0" width="320" height="36" rx="18" ry="18" fill="url(#lineA)"/>
-        <rect x="0" y="56" width="440" height="36" rx="18" ry="18" fill="url(#lineB)"/>
-        <rect x="0" y="112" width="220" height="36" rx="18" ry="18" fill="url(#lineC)"/>
+      <g transform="translate(212 212)" filter="url(#cardShadow)">
+        <rect width="600" height="700" rx="90" ry="90" fill="url(#card)"/>
 
-        <rect x="0" y="0" width="320" height="10" rx="5" fill="#ffffff" opacity="0.55"/>
-        <rect x="0" y="56" width="440" height="10" rx="5" fill="#ffffff" opacity="0.55"/>
-        <rect x="0" y="112" width="220" height="10" rx="5" fill="#ffffff" opacity="0.55"/>
+        <path d="M 90 0 L 510 0 Q 600 0 600 90 L 600 320 L 0 320 L 0 90 Q 0 0 90 0 Z"
+              fill="url(#topGlow)" opacity="0.55"/>
 
-        <circle cx="290" cy="18" r="4" fill="#ffffff" opacity="0.7"/>
-        <circle cx="410" cy="74" r="4" fill="#ffffff" opacity="0.7"/>
-        <circle cx="190" cy="130" r="4" fill="#ffffff" opacity="0.7"/>
+        <g transform="translate(300 300)">
+          <circle cx="0" cy="0" r="300" fill="url(#aura)"/>
+          <circle cx="0" cy="0" r="220" fill="#7dd3fc" opacity="0.6" filter="url(#bigGlow)"/>
+          <circle cx="0" cy="0" r="160" fill="#bae6fd" opacity="0.8" filter="url(#bigGlow)"/>
+          <circle cx="0" cy="0" r="110" fill="#ffffff" opacity="1" filter="url(#midGlow)"/>
+
+          <path
+            d="M 0 -180 Q 26 -26 180 0 Q 26 26 0 180 Q -26 26 -180 0 Q -26 -26 0 -180 Z"
+            fill="url(#sparkFill)"
+            filter="url(#midGlow)"/>
+
+          <path
+            d="M 0 -180 Q 26 -26 180 0 Q 26 26 0 180 Q -26 26 -180 0 Q -26 -26 0 -180 Z"
+            fill="none"
+            stroke="#ffffff"
+            stroke-width="10"
+            stroke-linejoin="round"
+            opacity="1"/>
+
+          <circle cx="0" cy="0" r="56" fill="#ffffff" filter="url(#smallGlow)"/>
+          <circle cx="0" cy="0" r="36" fill="#ffffff"/>
+          <circle cx="-12" cy="-12" r="14" fill="#ffffff"/>
+        </g>
+
+        <g transform="translate(80 540)">
+          <rect x="-3" y="-3" width="326" height="42" rx="21" fill="url(#lineA)" opacity="0.5" filter="url(#midGlow)"/>
+          <rect x="-3" y="53" width="446" height="42" rx="21" fill="url(#lineB)" opacity="0.5" filter="url(#midGlow)"/>
+          <rect x="-3" y="109" width="226" height="42" rx="21" fill="url(#lineC)" opacity="0.5" filter="url(#midGlow)"/>
+
+          <rect x="0" y="0" width="320" height="36" rx="18" ry="18" fill="url(#lineA)"/>
+          <rect x="0" y="56" width="440" height="36" rx="18" ry="18" fill="url(#lineB)"/>
+          <rect x="0" y="112" width="220" height="36" rx="18" ry="18" fill="url(#lineC)"/>
+
+          <rect x="0" y="0" width="320" height="10" rx="5" fill="#ffffff" opacity="0.55"/>
+          <rect x="0" y="56" width="440" height="10" rx="5" fill="#ffffff" opacity="0.55"/>
+          <rect x="0" y="112" width="220" height="10" rx="5" fill="#ffffff" opacity="0.55"/>
+
+          <circle cx="290" cy="18" r="4" fill="#ffffff" opacity="0.7"/>
+          <circle cx="410" cy="74" r="4" fill="#ffffff" opacity="0.7"/>
+          <circle cx="190" cy="130" r="4" fill="#ffffff" opacity="0.7"/>
+        </g>
       </g>
     </g>
   </g>
