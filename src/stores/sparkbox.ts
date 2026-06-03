@@ -2,7 +2,7 @@ import { defineStore } from "pinia";
 import { ref, computed } from "vue";
 import { tools } from "../tools";
 
-export const useToolboxStore = defineStore("toolbox", () => {
+export const useSparkboxStore = defineStore("sparkbox", () => {
   const activeToolId = ref(tools[0]?.id ?? "");
   const searchQuery = ref("");
 

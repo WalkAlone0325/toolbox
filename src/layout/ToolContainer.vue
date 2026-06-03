@@ -1,9 +1,9 @@
 <script setup lang="ts">
 import { computed } from "vue";
-import { useToolboxStore } from "../stores/toolbox";
+import { useSparkboxStore } from "../stores/sparkbox";
 import { getTool } from "../tools";
 
-const store = useToolboxStore();
+const store = useSparkboxStore();
 
 const activeComponent = computed(() => {
   const tool = getTool(store.activeToolId);

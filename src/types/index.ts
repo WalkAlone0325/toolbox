@@ -22,4 +22,10 @@ export interface ClipboardEntry {
   pinned: boolean
   created_at: number
   updated_at: number
+  last_used_at: number
+  use_count: number
+  title: string | null
+  tags: string | null
+  summary: string | null
+  note: string | null
 }

@@ -115,7 +115,7 @@ body {
   user-select: none;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
-  font-size: 14px;
+  font-size: var(--font-base, 14px);
   line-height: 1.5;
   transition: background-color 0.25s ease, color 0.25s ease;
 }

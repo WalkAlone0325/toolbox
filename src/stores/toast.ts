@@ -44,5 +44,11 @@ export const useToastStore = defineStore("toast", () => {
     show(msg, "danger", 2500);
   }
 
-  return { items, show, dismiss, success, info, warning, danger };
+  function preview(message: string, kind: ToastKind = "success") {
+    const text = message.replace(/\s+/g, " ").trim();
+    const snippet = text.length > 24 ? `${text.slice(0, 24)}…` : text;
+    show(snippet ? `已复制：${snippet}` : "已复制", kind);
+  }
+
+  return { items, show, dismiss, success, info, warning, danger, preview };
 });

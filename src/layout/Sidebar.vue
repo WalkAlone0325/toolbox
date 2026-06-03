@@ -1,9 +1,9 @@
 <script setup lang="ts">
 import { computed } from "vue";
-import { useToolboxStore } from "../stores/toolbox";
+import { useSparkboxStore } from "../stores/sparkbox";
 import { useThemeStore, type ThemeMode } from "../stores/theme";
 
-const store = useToolboxStore();
+const store = useSparkboxStore();
 const theme = useThemeStore();
 
 const modeIcon = computed(() => {
@@ -41,8 +41,8 @@ function cycleMode() {
         </svg>
       </div>
       <div class="brand-text">
-        <div class="brand-name">Toolbox</div>
-        <div class="brand-sub">工具箱</div>
+        <div class="brand-name">Sparkbox</div>
+        <div class="brand-sub">智能工具集</div>
       </div>
     </div>
 

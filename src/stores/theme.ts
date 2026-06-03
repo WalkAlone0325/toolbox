@@ -127,7 +127,7 @@ const LIGHT_THEME = {
   },
 };
 
-const STORAGE_KEY = "toolbox.theme";
+const STORAGE_KEY = "sparkbox.theme";
 
 interface StoredConfig {
   mode: ThemeMode;
