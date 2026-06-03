@@ -1,13 +1,163 @@
 <script setup lang="ts">
-import { computed } from "vue";
+import { computed, ref, watch, onMounted } from "vue";
+import { invoke } from "@tauri-apps/api/core";
 import { useThemeStore, THEME_PRESETS, type ThemeMode } from "../stores/theme";
+import { useToastStore } from "../stores/toast";
+import { useDisplayStore, type FontSize } from "../stores/display";
 
 const theme = useThemeStore();
+const toast = useToastStore();
+const display = useDisplayStore();
+
+interface AppSettings {
+  auto_hide_on_blur: boolean;
+  max_age_days: number | null;
+  max_count: number | null;
+  max_bytes: number | null;
+  ignore_apps: string[];
+  cleanup_interval_secs: number;
+  llm_provider: string | null;
+  llm_api_key: string | null;
+  llm_base_url: string | null;
+  llm_model: string | null;
+}
+
+const settings = ref<AppSettings>({
+  auto_hide_on_blur: false,
+  max_age_days: null,
+  max_count: null,
+  max_bytes: null,
+  ignore_apps: [],
+  cleanup_interval_secs: 3600,
+  llm_provider: null,
+  llm_api_key: null,
+  llm_base_url: null,
+  llm_model: null,
+});
+
+const autoHideOnBlur = ref(false);
+const maxAgeDays = ref<number | null>(null);
+const maxCount = ref<number | null>(null);
+const maxBytesMB = ref<number | null>(null);
+const ignoreApps = ref<string[]>([]);
+const newIgnoreApp = ref("");
+
+const llmProvider = ref<string>("openai");
+const llmApiKey = ref<string>("");
+const llmBaseUrl = ref<string>("");
+const llmModel = ref<string>("");
+const testing = ref(false);
+const testResult = ref<{ ok: boolean; message: string } | null>(null);
+
+const providerOptions = [
+  { id: "openai", label: "OpenAI", default_base: "https://api.openai.com/v1", default_model: "gpt-4o-mini" },
+  { id: "anthropic", label: "Anthropic Claude", default_base: "https://api.anthropic.com", default_model: "claude-haiku-4-5-20251001" },
+  { id: "ollama", label: "Ollama (本地)", default_base: "http://localhost:11434", default_model: "qwen2.5:7b" },
+];
+
+const currentProvider = computed(() =>
+  providerOptions.find((p) => p.id === llmProvider.value) ?? providerOptions[0]
+);
+
+function onProviderChange() {
+  if (!llmBaseUrl.value) llmBaseUrl.value = currentProvider.value.default_base;
+  if (!llmModel.value) llmModel.value = currentProvider.value.default_model;
+}
+
+watch(llmProvider, onProviderChange);
+
+watch(autoHideOnBlur, (v) => {
+  localStorage.setItem("sparkbox.autoHideOnBlur", v ? "1" : "0");
+  window.dispatchEvent(new CustomEvent("sparkbox-settings-changed"));
+});
+
+async function loadSettings() {
+  try {
+    const s = await invoke<AppSettings>("get_settings");
+    settings.value = s;
+    autoHideOnBlur.value = s.auto_hide_on_blur || localStorage.getItem("sparkbox.autoHideOnBlur") === "1";
+    maxAgeDays.value = s.max_age_days;
+    maxCount.value = s.max_count;
+    maxBytesMB.value = s.max_bytes ? Math.round(s.max_bytes / (1024 * 1024)) : null;
+    ignoreApps.value = [...s.ignore_apps];
+    llmProvider.value = s.llm_provider ?? "openai";
+    llmApiKey.value = s.llm_api_key ?? "";
+    llmBaseUrl.value = s.llm_base_url ?? currentProvider.value.default_base;
+    llmModel.value = s.llm_model ?? currentProvider.value.default_model;
+  } catch (e) {
+    autoHideOnBlur.value = localStorage.getItem("sparkbox.autoHideOnBlur") === "1";
+  }
+}
+
+async function saveAll() {
+  try {
+    await invoke("save_settings", {
+      settings: {
+        auto_hide_on_blur: autoHideOnBlur.value,
+        max_age_days: maxAgeDays.value && maxAgeDays.value > 0 ? maxAgeDays.value : null,
+        max_count: maxCount.value && maxCount.value > 0 ? maxCount.value : null,
+        max_bytes: maxBytesMB.value && maxBytesMB.value > 0 ? maxBytesMB.value * 1024 * 1024 : null,
+        ignore_apps: ignoreApps.value,
+        cleanup_interval_secs: 3600,
+        llm_provider: llmProvider.value || null,
+        llm_api_key: llmApiKey.value || null,
+        llm_base_url: llmBaseUrl.value || null,
+        llm_model: llmModel.value || null,
+      },
+    });
+    toast.success("设置已保存");
+  } catch {
+    toast.danger("保存失败");
+  }
+}
+
+async function testConnection() {
+  if (testing.value) return;
+  await saveAll();
+  testing.value = true;
+  testResult.value = null;
+  try {
+    const reply = await invoke<string>("test_llm_connection");
+    testResult.value = { ok: true, message: `连接成功：${reply || "(空回复)"}` };
+  } catch (e) {
+    testResult.value = { ok: false, message: `失败：${(e as Error).message || e}` };
+  } finally {
+    testing.value = false;
+  }
+}
+
+async function cleanupNow() {
+  try {
+    const n = await invoke<number>("cleanup_now", {
+      maxAgeDays: maxAgeDays.value && maxAgeDays.value > 0 ? maxAgeDays.value : null,
+      maxCount: maxCount.value && maxCount.value > 0 ? maxCount.value : null,
+      maxBytes: maxBytesMB.value && maxBytesMB.value > 0 ? maxBytesMB.value * 1024 * 1024 : null,
+    });
+    toast.success(`已清理 ${n} 条`);
+  } catch {
+    toast.danger("清理失败");
+  }
+}
+
+function addIgnoreApp() {
+  const name = newIgnoreApp.value.trim();
+  if (!name) return;
+  if (!ignoreApps.value.includes(name)) {
+    ignoreApps.value.push(name);
+  }
+  newIgnoreApp.value = "";
+}
+
+function removeIgnoreApp(name: string) {
+  ignoreApps.value = ignoreApps.value.filter((x) => x !== name);
+}
+
+onMounted(loadSettings);
 
 const modes: { id: ThemeMode; label: string; desc: string; icon: string }[] = [
-  { id: "system", label: "跟随系统", desc: "自动匹配 macOS 外观", icon: "auto" },
-  { id: "dark", label: "深色", desc: "始终使用深色主题", icon: "moon" },
-  { id: "light", label: "浅色", desc: "始终使用浅色主题", icon: "sun" },
+  { id: "system", label: "跟随系统", desc: "自动匹配系统外观", icon: "auto" },
+  { id: "dark", label: "深色", desc: "始终使用深色", icon: "moon" },
+  { id: "light", label: "浅色", desc: "始终使用浅色", icon: "sun" },
 ];
 
 const accentPresets = [
@@ -166,8 +316,193 @@ const effectiveLabel = computed(() => (theme.isDark ? "深色" : "浅色"));
       </button>
     </section>
 
+    <section class="block">
+      <header class="block-header">
+        <h2 class="block-title">行为</h2>
+        <p class="block-desc">控制窗口与剪贴板的交互行为</p>
+      </header>
+
+      <label class="row">
+        <div class="row-text">
+          <div class="row-label">窗口失焦自动隐藏</div>
+          <div class="row-desc">点击其他应用时窗口自动隐藏（类 PasteBot 风格）</div>
+        </div>
+        <input v-model="autoHideOnBlur" type="checkbox" class="toggle" />
+      </label>
+    </section>
+
+    <section class="block">
+      <header class="block-header">
+        <h2 class="block-title">显示</h2>
+        <p class="block-desc">字体大小与列表密度</p>
+      </header>
+
+      <div class="seg-group">
+        <button
+          v-for="opt in [{ id: 'small', label: '小' }, { id: 'standard', label: '标准' }, { id: 'large', label: '大' }]"
+          :key="opt.id"
+          class="seg-btn"
+          :class="{ active: display.fontSize === opt.id }"
+          @click="display.setFontSize(opt.id as FontSize)"
+        >
+          {{ opt.label }}
+        </button>
+      </div>
+
+      <label class="row" style="margin-top: 10px;">
+        <div class="row-text">
+          <div class="row-label">紧凑模式</div>
+          <div class="row-desc">缩小列表行高与间距，单屏显示更多条目</div>
+        </div>
+        <input
+          :checked="display.compact"
+          type="checkbox"
+          class="toggle"
+          @change="display.setCompact(($event.target as HTMLInputElement).checked)"
+        />
+      </label>
+    </section>
+
+    <section class="block">
+      <header class="block-header">
+        <h2 class="block-title">自动清理</h2>
+        <p class="block-desc">超过阈值的非收藏非置顶条目会被自动删除（留空表示不限制）</p>
+      </header>
+
+      <div class="grid-2">
+        <label class="field">
+          <span class="field-label">保留天数</span>
+          <input
+            v-model.number="maxAgeDays"
+            type="number"
+            min="0"
+            placeholder="如 30"
+            class="field-input"
+          />
+          <span class="field-hint">天</span>
+        </label>
+        <label class="field">
+          <span class="field-label">最大条数</span>
+          <input
+            v-model.number="maxCount"
+            type="number"
+            min="0"
+            placeholder="如 1000"
+            class="field-input"
+          />
+          <span class="field-hint">条</span>
+        </label>
+        <label class="field">
+          <span class="field-label">最大占用</span>
+          <input
+            v-model.number="maxBytesMB"
+            type="number"
+            min="0"
+            placeholder="如 500"
+            class="field-input"
+          />
+          <span class="field-hint">MB</span>
+        </label>
+      </div>
+
+      <div class="row-actions">
+        <button class="action-btn" @click="cleanupNow">立即清理</button>
+        <button class="action-btn primary" @click="saveAll">保存设置</button>
+      </div>
+    </section>
+
+    <section class="block">
+      <header class="block-header">
+        <h2 class="block-title">忽略名单</h2>
+        <p class="block-desc">来自这些应用的复制内容不会被记录（按应用名匹配，区分大小写）</p>
+      </header>
+
+      <div class="ignore-input">
+        <input
+          v-model="newIgnoreApp"
+          type="text"
+          placeholder="如 1Password"
+          class="field-input flex"
+          @keydown.enter.prevent="addIgnoreApp"
+        />
+        <button class="action-btn" @click="addIgnoreApp">添加</button>
+      </div>
+
+      <div v-if="ignoreApps.length === 0" class="empty-list">暂无忽略应用</div>
+      <div v-else class="tag-list">
+        <span v-for="name in ignoreApps" :key="name" class="tag">
+          {{ name }}
+          <button class="tag-x" type="button" @click="removeIgnoreApp(name)">×</button>
+        </span>
+      </div>
+
+      <div class="row-actions">
+        <button class="action-btn primary" @click="saveAll">保存设置</button>
+      </div>
+    </section>
+
+    <section class="block ai-block">
+      <header class="block-header">
+        <h2 class="block-title">AI 助手</h2>
+        <p class="block-desc">配置大语言模型，启用右键 AI 操作（翻译 / 总结 / 润色等）</p>
+      </header>
+
+      <div class="ai-form">
+        <div class="ai-row">
+          <label class="ai-label">Provider</label>
+          <select v-model="llmProvider" class="field-input ai-select">
+            <option v-for="opt in providerOptions" :key="opt.id" :value="opt.id">
+              {{ opt.label }}
+            </option>
+          </select>
+        </div>
+
+        <div class="ai-row">
+          <label class="ai-label">API Key</label>
+          <input
+            v-model="llmApiKey"
+            type="password"
+            class="field-input"
+            :placeholder="llmProvider === 'ollama' ? '本地模型无需 Key' : 'sk-...'"
+            :disabled="llmProvider === 'ollama'"
+          />
+        </div>
+
+        <div class="ai-row">
+          <label class="ai-label">Base URL</label>
+          <input
+            v-model="llmBaseUrl"
+            type="text"
+            class="field-input"
+            :placeholder="currentProvider.default_base"
+          />
+        </div>
+
+        <div class="ai-row">
+          <label class="ai-label">Model</label>
+          <input
+            v-model="llmModel"
+            type="text"
+            class="field-input"
+            :placeholder="currentProvider.default_model"
+          />
+        </div>
+
+        <div v-if="testResult" class="ai-test" :class="{ ok: testResult.ok, fail: !testResult.ok }">
+          {{ testResult.message }}
+        </div>
+
+        <div class="ai-actions">
+          <button class="action-btn" :disabled="testing" @click="testConnection">
+            {{ testing ? "测试中..." : "测试连接" }}
+          </button>
+          <button class="action-btn primary" @click="saveAll">保存设置</button>
+        </div>
+      </div>
+    </section>
+
     <footer class="settings-footer">
-      <span>Toolbox v0.1.0 · 配置存储于本地浏览器</span>
+      <span>Sparkbox v0.1.0 · 配置存储于本地浏览器</span>
     </footer>
   </div>
 </template>
@@ -216,8 +551,8 @@ const effectiveLabel = computed(() => (theme.isDark ? "深色" : "浅色"));
   position: relative;
   display: flex;
   align-items: center;
-  gap: 12px;
-  padding: 14px 38px 14px 14px;
+  gap: 10px;
+  padding: 12px 34px 12px 12px;
   border: 1px solid var(--border);
   border-radius: var(--radius);
   background: var(--bg-elev-2);
@@ -225,7 +560,7 @@ const effectiveLabel = computed(() => (theme.isDark ? "深色" : "浅色"));
   cursor: pointer;
   text-align: left;
   transition: all var(--transition);
-  min-height: 64px;
+  min-height: 56px;
 }
 
 .mode-card:hover {
@@ -240,8 +575,8 @@ const effectiveLabel = computed(() => (theme.isDark ? "深色" : "浅色"));
 }
 
 .mode-icon {
-  width: 36px;
-  height: 36px;
+  width: 32px;
+  height: 32px;
   border-radius: var(--radius-sm);
   background: var(--bg-elev-3);
   display: flex;
@@ -257,8 +592,8 @@ const effectiveLabel = computed(() => (theme.isDark ? "深色" : "浅色"));
 }
 
 .mode-icon svg {
-  width: 18px;
-  height: 18px;
+  width: 16px;
+  height: 16px;
 }
 
 .mode-text {
@@ -270,12 +605,18 @@ const effectiveLabel = computed(() => (theme.isDark ? "深色" : "浅色"));
   font-size: 13px;
   font-weight: 600;
   color: var(--text-bright);
+  line-height: 1.3;
+  white-space: nowrap;
 }
 
 .mode-desc {
   font-size: 11.5px;
   color: var(--text-muted);
   margin-top: 2px;
+  line-height: 1.3;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
 .mode-card .check,
@@ -512,5 +853,354 @@ const effectiveLabel = computed(() => (theme.isDark ? "深色" : "浅色"));
   font-size: 11.5px;
   color: var(--text-muted);
   padding: 12px 0;
+}
+
+.row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 12px 14px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  background: var(--bg-elev-2);
+  cursor: pointer;
+  transition: all var(--transition);
+}
+
+.row:hover {
+  border-color: var(--border-strong);
+}
+
+.row-text {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  min-width: 0;
+}
+
+.row-label {
+  font-size: 13px;
+  color: var(--text-bright);
+  font-weight: 500;
+}
+
+.row-desc {
+  font-size: 11.5px;
+  color: var(--text-muted);
+}
+
+.toggle {
+  appearance: none;
+  width: 36px;
+  height: 20px;
+  border-radius: 999px;
+  background: var(--bg-elev-3);
+  position: relative;
+  cursor: pointer;
+  transition: background var(--transition);
+  flex-shrink: 0;
+}
+
+.toggle::after {
+  content: "";
+  position: absolute;
+  top: 2px;
+  left: 2px;
+  width: 16px;
+  height: 16px;
+  border-radius: 50%;
+  background: var(--text-bright);
+  transition: transform var(--transition);
+}
+
+.toggle:checked {
+  background: var(--accent);
+}
+
+.toggle:checked::after {
+  transform: translateX(16px);
+}
+
+.ai-block {
+  border: 1px dashed var(--border-strong);
+  background: linear-gradient(135deg, rgba(99, 102, 241, 0.04), transparent 60%);
+}
+
+.ai-form {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.ai-row {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.ai-label {
+  font-size: 11.5px;
+  color: var(--text-muted);
+  font-weight: 500;
+}
+
+.ai-select {
+  appearance: none;
+  background-image: linear-gradient(45deg, transparent 50%, var(--text-muted) 50%),
+    linear-gradient(135deg, var(--text-muted) 50%, transparent 50%);
+  background-position: calc(100% - 16px) 50%, calc(100% - 11px) 50%;
+  background-size: 5px 5px, 5px 5px;
+  background-repeat: no-repeat;
+  padding-right: 32px;
+}
+
+.ai-test {
+  padding: 8px 12px;
+  border-radius: var(--radius-sm);
+  font-size: 12px;
+  line-height: 1.5;
+  word-break: break-word;
+}
+
+.ai-test.ok {
+  background: rgba(16, 185, 129, 0.1);
+  color: #10b981;
+  border: 1px solid rgba(16, 185, 129, 0.3);
+}
+
+.ai-test.fail {
+  background: rgba(239, 68, 68, 0.1);
+  color: var(--danger);
+  border: 1px solid rgba(239, 68, 68, 0.3);
+}
+
+.ai-actions {
+  display: flex;
+  gap: 8px;
+  justify-content: flex-end;
+  margin-top: 4px;
+}
+
+.ai-placeholder {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  padding: 16px;
+  border-radius: var(--radius);
+  background: var(--bg-elev-2);
+  border: 1px solid var(--border);
+}
+
+.ai-icon {
+  width: 40px;
+  height: 40px;
+  border-radius: 10px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(99, 102, 241, 0.12);
+  color: var(--accent);
+  flex-shrink: 0;
+}
+
+.ai-icon svg {
+  width: 22px;
+  height: 22px;
+}
+
+.ai-text {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  min-width: 0;
+}
+
+.ai-title {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--text-bright);
+}
+
+.ai-desc {
+  font-size: 11.5px;
+  color: var(--text-muted);
+  letter-spacing: 0.02em;
+}
+
+.grid-2 {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 10px;
+}
+
+@media (max-width: 720px) {
+  .grid-2 {
+    grid-template-columns: 1fr;
+  }
+}
+
+.field {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  padding: 10px 12px;
+  background: var(--bg-elev-2);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  position: relative;
+}
+
+.field-label {
+  font-size: 11.5px;
+  color: var(--text-muted);
+}
+
+.field-input {
+  width: 100%;
+  padding: 6px 8px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  background: var(--bg-elev-1);
+  color: var(--text-bright);
+  font-size: 13px;
+  outline: none;
+  transition: all var(--transition);
+}
+
+.field-input:focus {
+  border-color: var(--accent);
+  box-shadow: 0 0 0 3px var(--accent-glow);
+}
+
+.field-hint {
+  position: absolute;
+  right: 12px;
+  bottom: 16px;
+  font-size: 11px;
+  color: var(--text-muted);
+  pointer-events: none;
+}
+
+.row-actions {
+  display: flex;
+  gap: 8px;
+  margin-top: 12px;
+  justify-content: flex-end;
+}
+
+.action-btn {
+  padding: 7px 16px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  background: var(--bg-elev-2);
+  color: var(--text-dim);
+  font-size: 12.5px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all var(--transition);
+}
+
+.action-btn:hover {
+  border-color: var(--border-strong);
+  color: var(--text);
+}
+
+.action-btn.primary {
+  border-color: var(--accent);
+  background: var(--accent);
+  color: white;
+}
+
+.action-btn.primary:hover {
+  filter: brightness(1.08);
+}
+
+.ignore-input {
+  display: flex;
+  gap: 8px;
+  margin-bottom: 10px;
+}
+
+.ignore-input .field-input.flex {
+  flex: 1;
+}
+
+.empty-list {
+  padding: 16px;
+  text-align: center;
+  font-size: 12px;
+  color: var(--text-muted);
+  border: 1px dashed var(--border);
+  border-radius: var(--radius);
+}
+
+.tag-list {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  padding: 8px 10px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  background: var(--bg-elev-2);
+  min-height: 40px;
+}
+
+.tag {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 3px 10px;
+  border-radius: 999px;
+  background: var(--bg-elev-3);
+  color: var(--text-bright);
+  font-size: 12px;
+  border: 1px solid var(--border);
+}
+
+.tag-x {
+  border: none;
+  background: transparent;
+  color: var(--text-muted);
+  cursor: pointer;
+  font-size: 14px;
+  line-height: 1;
+  padding: 0;
+  display: inline-flex;
+  align-items: center;
+}
+
+.tag-x:hover {
+  color: var(--danger);
+}
+
+.seg-group {
+  display: inline-flex;
+  padding: 3px;
+  background: var(--bg-elev-2);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  gap: 2px;
+}
+
+.seg-btn {
+  padding: 6px 18px;
+  border: none;
+  border-radius: 7px;
+  background: transparent;
+  color: var(--text-dim);
+  font-size: 12.5px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all var(--transition);
+}
+
+.seg-btn:hover {
+  color: var(--text);
+}
+
+.seg-btn.active {
+  background: var(--accent);
+  color: white;
+  box-shadow: 0 2px 6px var(--accent-glow);
 }
 </style>
