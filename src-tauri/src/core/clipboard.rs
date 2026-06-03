@@ -29,6 +29,24 @@ pub fn start_monitoring(app: AppHandle, db: Arc<std::sync::Mutex<Database>>) {
         if detect_change(&mut last_change) {
             if let Ok(Some((type_, text, image_data, file_list))) = read_clipboard(&mut clipboard)
             {
+                let source_app = current_source_app();
+                let ignore = {
+                    if let Some(name) = &source_app {
+                        if let Ok(guard) = db.lock() {
+                            let s = guard.load_settings();
+                            s.ignore_apps.iter().any(|x| x == name)
+                        } else {
+                            false
+                        }
+                    } else {
+                        false
+                    }
+                };
+                if ignore {
+                    std::thread::sleep(Duration::from_millis(500));
+                    continue;
+                }
+
                 let hash = compute_hash(
                     &type_,
                     text.as_deref(),
@@ -43,6 +61,7 @@ pub fn start_monitoring(app: AppHandle, db: Arc<std::sync::Mutex<Database>>) {
                             image_data.as_deref(),
                             file_list.as_deref(),
                             &hash,
+                            source_app.as_deref(),
                         ) {
                             error!("Failed to save clipboard: {}", e);
                         } else {
@@ -50,11 +69,77 @@ pub fn start_monitoring(app: AppHandle, db: Arc<std::sync::Mutex<Database>>) {
                         }
                     } else {
                         let _ = guard.touch_entry(&hash);
+                        let _ = app.emit("clipboard-update", ());
                     }
                 }
             }
         }
         std::thread::sleep(Duration::from_millis(500));
+    }
+}
+
+pub fn start_cleanup_task(app: AppHandle, db: Arc<std::sync::Mutex<Database>>) {
+    std::thread::spawn(move || {
+        loop {
+            std::thread::sleep(Duration::from_secs(60));
+            if !RUNNING.load(Ordering::SeqCst) {
+                break;
+            }
+            let settings = {
+                let Ok(guard) = db.lock() else { continue };
+                guard.load_settings()
+            };
+            let interval = settings.cleanup_interval_secs.max(300);
+            let max_age = settings.max_age_days.filter(|&v| v > 0);
+            let max_count = settings.max_count.filter(|&v| v > 0);
+            let max_bytes = settings.max_bytes.filter(|&v| v > 0);
+            if max_age.is_none() && max_count.is_none() && max_bytes.is_none() {
+                continue;
+            }
+            if let Ok(guard) = db.lock() {
+                if let Err(e) = guard.cleanup_old(max_age, max_count, max_bytes) {
+                    log::warn!("Auto cleanup failed: {}", e);
+                } else {
+                    let _ = app.emit("clipboard-update", ());
+                }
+            }
+            let _ = interval;
+        }
+    });
+}
+
+fn current_source_app() -> Option<String> {
+    #[cfg(target_os = "macos")]
+    {
+        macos_frontmost_app()
+    }
+    #[cfg(not(target_os = "macos"))]
+    {
+        None
+    }
+}
+
+#[cfg(target_os = "macos")]
+fn macos_frontmost_app() -> Option<String> {
+    use objc::runtime::{Class, Object};
+    use objc::{msg_send, sel, sel_impl};
+    unsafe {
+        let ws_cls = Class::get("NSWorkspace")?;
+        let ws: *mut Object = msg_send![ws_cls, sharedWorkspace];
+        let app: *mut Object = msg_send![ws, frontmostApplication];
+        if app.is_null() {
+            return None;
+        }
+        let name: *mut Object = msg_send![app, localizedName];
+        if name.is_null() {
+            return None;
+        }
+        let c_str: *const i8 = msg_send![name, UTF8String];
+        if c_str.is_null() {
+            return None;
+        }
+        let s = std::ffi::CStr::from_ptr(c_str).to_string_lossy().into_owned();
+        Some(s)
     }
 }
 
@@ -216,4 +301,8 @@ fn compute_hash(type_: &str, text: Option<&str>, image: Option<&[u8]>, files: Op
         _ => hasher.update(b"unknown"),
     }
     hex::encode(hasher.finalize())
+}
+
+pub fn compute_hash_public(type_: &str, text: Option<&str>, files: Option<&str>) -> String {
+    compute_hash(type_, text, None, files)
 }
